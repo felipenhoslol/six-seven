@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Detector Gesto 67 - Supremo Supabase</title>
     <!-- Fonte moderna e minimalista do Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
@@ -230,6 +231,105 @@
         .rank-score { font-weight: 900; font-size: 22px; color: var(--cor-primaria); }
 
         .loader-ranking { color: var(--cor-primaria); margin: 20px 0; font-weight: bold; animation: pulse-op 1s infinite alternate;}
+
+        /* ------------- RESPONSIVIDADE MOBILE ------------- */
+        @media (max-width: 860px) {
+            .workspace {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
+            }
+
+            .hud {
+                padding: 15px;
+                justify-content: flex-start;
+            }
+
+            .painel-topo {
+                flex-direction: column;
+                gap: 10px;
+                margin-top: 55px; /* Espaço para os botões do topo absolutos */
+                align-items: stretch;
+            }
+
+            .topo-estatistica {
+                gap: 10px;
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .painel {
+                padding: 10px 15px;
+                width: 100%;
+                box-sizing: border-box;
+                text-align: center;
+            }
+
+            .contador-valor, .timer-valor {
+                font-size: 36px;
+            }
+
+            h1, h2 {
+                font-size: 11px;
+                margin-bottom: 5px;
+            }
+            
+            .status-box h2 {
+                margin-bottom: 10px;
+            }
+            
+            .indicadores {
+                justify-content: center;
+            }
+
+            .btn-modo, .btn-ranking {
+                top: 15px;
+                padding: 8px 12px;
+                font-size: 10px;
+            }
+
+            .btn-modo { left: 15px; }
+            .btn-ranking { right: 15px; }
+
+            .controles {
+                margin-top: auto;
+                margin-bottom: 20px;
+            }
+
+            /* Ajustes Finos nos Modais para celular */
+            .modal {
+                width: 90vw;
+                padding: 25px;
+                border-radius: 18px;
+            }
+            
+            .modal h3 {
+                font-size: 22px;
+            }
+
+            .placar-final {
+                font-size: 40px;
+            }
+
+            .btn-fechar {
+                top: -10px; right: -10px;
+                width: 35px; height: 35px; font-size: 14px;
+            }
+            
+            .ranking-item {
+                padding: 10px;
+            }
+            
+            .rank-nome {
+                font-size: 14px;
+            }
+            
+            .rank-score {
+                font-size: 18px;
+            }
+        }
     </style>
 </head>
 
