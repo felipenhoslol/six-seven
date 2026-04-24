@@ -3,10 +3,14 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Detector Gesto 67</title>
+    <title>Detector Gesto 67 - Supremo Supabase</title>
     <!-- Fonte moderna e minimalista do Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
     
+    <!-- Supabase JS Client Oficial -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Mediapipe Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -17,6 +21,7 @@
             --cor-primaria: #00e5ff;
             --cor-secundaria: #ff3d00;
             --cor-ok: #00e676;
+            --cor-neon-rosa: #ff00c8;
             --fundo-hud: rgba(20, 20, 25, 0.65);
             --borda-hud: rgba(255, 255, 255, 0.1);
         }
@@ -55,184 +60,176 @@
             z-index: 1;
         }
 
-        .input_video {
-            display: none;
-        }
+        .input_video { display: none; }
 
+        /* ------------- HUD HUD ------------- */
         .hud {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 30px;
-            box-sizing: border-box;
-            background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 80%, rgba(0,0,0,0.6) 100%);
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 30px; box-sizing: border-box;
+            background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 25%, rgba(0,0,0,0) 75%, rgba(0,0,0,0.6) 100%);
+            transition: opacity 1s; opacity: 0;
         }
 
         .painel {
             background: var(--fundo-hud);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 20px 30px;
-            border-radius: 16px;
-            border: 1px solid var(--borda-hud);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            width: fit-content;
-            transition: all 0.3s ease;
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            padding: 15px 25px; border-radius: 16px; border: 1px solid var(--borda-hud);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); width: fit-content;
         }
 
         .painel-topo {
-            display: flex;
-            gap: 20px;
-            justify-content: space-between;
+            display: flex; gap: 20px;
             align-items: flex-start;
-            width: 100%;
+            margin-top: 50px; /* espaco pro botao modo de jogo */
         }
 
-        .contador-box h1 {
-            margin: 0 0 8px 0;
-            font-size: 14px;
-            color: #8bb4b8;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            font-weight: 700;
-        }
+        .topo-estatistica { display: flex; gap: 20px; }
+
+        /* UI Textos */
+        h1, h2 { margin: 0 0 8px 0; text-transform: uppercase; font-weight: 700; letter-spacing: 2px; }
+        h1 { font-size: 12px; color: #8bb4b8; }
+        h2 { font-size: 14px; color: #8bb4b8; margin-bottom: 15px;}
 
         .contador-valor {
-            font-size: 64px;
-            font-weight: 900;
-            margin: 0;
-            color: var(--cor-primaria);
-            line-height: 1;
-            text-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
-            display: inline-block;
+            font-size: 54px; font-weight: 900; margin: 0; color: var(--cor-primaria); line-height: 1;
+            text-shadow: 0 0 20px rgba(0, 229, 255, 0.4); display: inline-block;
         }
 
+        .timer-valor {
+            font-size: 54px; font-weight: 900; margin: 0; color: var(--cor-secundaria); line-height: 1;
+            text-shadow: 0 0 20px rgba(255, 61, 0, 0.4); display: inline-block;
+            transition: color 0.3s;
+        }
+
+        .timer-desativado { opacity: 0.3; filter: grayscale(100%); }
+
+        /* Animações Pop */
         @keyframes pop {
             0% { transform: scale(1); }
             50% { transform: scale(1.3); color: var(--cor-ok); text-shadow: 0 0 30px var(--cor-ok); }
             100% { transform: scale(1); }
         }
+        .animar-pop { animation: pop 0.5s ease-out; }
 
-        .animar-pop {
-            animation: pop 0.5s ease-out;
-        }
-
-        .status-box h2 {
-            margin: 0 0 15px 0;
-            font-size: 14px;
-            font-weight: 700;
-            color: #8bb4b8;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        .fase-destaque {
-            font-weight: 900;
-            color: #111;
-            background: var(--cor-primaria);
-            padding: 6px 14px;
-            border-radius: 8px;
-            margin-left: 8px;
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
-            transition: all 0.3s ease;
-        }
-
-        .fase-destaque.fase-descendo {
-            background: var(--cor-secundaria);
-            box-shadow: 0 0 15px rgba(255, 61, 0, 0.4);
-            color: white;
-        }
-
-        .indicadores {
-            display: flex;
-            gap: 20px;
-            font-size: 15px;
-            font-weight: 600;
-        }
-
-        .mao-status {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .bolinha {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background-color: transparent;
-            border: 2px solid var(--borda-hud);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .bolinha.ok {
-            background-color: var(--cor-ok);
-            border-color: var(--cor-ok);
-            box-shadow: 0 0 15px var(--cor-ok);
-            transform: scale(1.2);
-        }
-
-        .texto-status {
-            color: #e0e0e0;
-        }
-
-        .controles {
-            align-self: center;
-            pointer-events: auto;
-        }
-
+        /* Botões */
         button {
             background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-            color: white;
-            border: 1px solid var(--borda-hud);
-            padding: 14px 32px;
-            font-size: 14px;
-            font-family: 'Outfit', sans-serif;
-            font-weight: 800;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            border-radius: 12px;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
+            color: white; border: 1px solid var(--borda-hud); padding: 12px 28px;
+            font-size: 13px; font-family: 'Outfit', sans-serif; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+            border-radius: 12px; cursor: pointer; backdrop-filter: blur(10px); transition: all 0.3s ease; pointer-events: auto;
         }
-
         button:hover {
-            background: var(--cor-primaria);
-            color: #000;
-            border-color: var(--cor-primaria);
-            box-shadow: 0 0 25px rgba(0, 229, 255, 0.5);
-            transform: translateY(-2px);
+            background: var(--cor-primaria); color: #000; border-color: var(--cor-primaria);
+            box-shadow: 0 0 25px rgba(0, 229, 255, 0.5); transform: translateY(-2px);
+        }
+        button.secundario:hover { background: var(--cor-ok); border-color: var(--cor-ok); box-shadow: 0 0 25px rgba(0, 230, 118, 0.5); }
+        
+        button.btn-modo.livre {
+            background: rgba(255, 0, 200, 0.1); border-color: var(--cor-neon-rosa); color: white;
+            box-shadow: 0 0 15px rgba(255, 0, 200, 0.2);
+        }
+        button.btn-modo.livre:hover {
+            background: var(--cor-neon-rosa); color: black; box-shadow: 0 0 25px rgba(255, 0, 200, 0.5);
         }
 
-        button:active {
-            transform: translateY(1px);
-        }
+        .btn-ranking { position: absolute; top: 30px; right: 30px; }
+        .btn-modo { position: absolute; top: 30px; left: 30px; }
 
+        /* Fases */
+        .fase-destaque {
+            font-weight: 900; color: #111; background: var(--cor-primaria); padding: 6px 14px; border-radius: 8px;
+            margin-left: 8px; box-shadow: 0 0 15px rgba(0, 229, 255, 0.4); transition: all 0.3s ease;
+        }
+        .fase-destaque.fase-descendo { background: var(--cor-secundaria); box-shadow: 0 0 15px rgba(255, 61, 0, 0.4); color: white; }
+
+        .indicadores { display: flex; gap: 20px; font-size: 15px; font-weight: 600; }
+        .mao-status { display: flex; align-items: center; gap: 10px; }
+        .bolinha {
+            width: 14px; height: 14px; border-radius: 50%; background-color: transparent; border: 2px solid var(--borda-hud); transition: all 0.3s;
+        }
+        .bolinha.ok { background-color: var(--cor-ok); border-color: var(--cor-ok); box-shadow: 0 0 15px var(--cor-ok); transform: scale(1.2); }
+        .texto-status { color: #e0e0e0; }
+
+        .controles { align-self: center; }
+
+        /* Loader */
         .carregando-msg {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--cor-primaria);
-            z-index: 0;
-            letter-spacing: 3px;
-            animation: pulse-op 1.5s infinite alternate;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 18px; font-weight: 700; color: var(--cor-primaria); z-index: 0; letter-spacing: 3px;
+            animation: pulse-op 1.5s infinite alternate; text-align: center; width: 100%;
         }
+        @keyframes pulse-op { from { opacity: 0.3; } to { opacity: 1; } }
 
-        @keyframes pulse-op {
-            from { opacity: 0.3; }
-            to { opacity: 1; }
+        /* ------------- MODAIS (SUPABASE & LEADERBOARD) ------------- */
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            z-index: 10; display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: all 0.4s ease;
         }
+        .overlay.ativo { opacity: 1; pointer-events: auto; }
+
+        .modal {
+            background: var(--fundo-hud); border: 1px solid var(--cor-primaria);
+            box-shadow: 0 0 40px rgba(0, 229, 255, 0.2), inset 0 0 20px rgba(0, 229, 255, 0.05);
+            padding: 40px; border-radius: 24px; width: 420px; text-align: center;
+            transform: scale(0.9); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+        .overlay.ativo .modal { transform: scale(1); }
+
+        .modal h3 {
+            margin-top: 0; color: var(--cor-primaria); font-size: 28px; font-weight: 900;
+            text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 10px rgba(0, 229, 255, 0.4); margin-bottom: 5px;
+        }
+        
+        .btn-fechar {
+            position: absolute; top: -15px; right: -15px; width: 40px; height: 40px;
+            border-radius: 50%; background: var(--cor-secundaria); color: white; border: none; font-size: 18px;
+            box-shadow: 0 0 15px rgba(255, 61, 0, 0.5); padding: 0; display: flex; align-items: center; justify-content: center;
+        }
+        .btn-fechar:hover { background: #ff7043; transform: scale(1.1); box-shadow: 0 0 25px rgba(255, 61, 0, 0.8); }
+
+        /* Modal Submit Específico */
+        .modal-subtitulo { color: #ccc; font-size: 16px; margin-bottom: 5px; }
+        .placar-final { font-size: 54px; font-weight: 900; color: var(--cor-ok); text-shadow: 0 0 20px rgba(0, 230, 118, 0.4); margin: 0 0 20px 0; }
+        .modal input {
+            width: 100%; padding: 15px; margin: 10px 0 25px 0; background: rgba(0, 0, 0, 0.6); border: 1px solid var(--borda-hud);
+            border-radius: 8px; color: white; font-family: 'Outfit', sans-serif; font-size: 18px; box-sizing: border-box;
+            outline: none; text-align: center; transition: border-color 0.3s;
+        }
+        .modal input:focus { border-color: var(--cor-primaria); box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); }
+
+        /* Modal Ranking Específico */
+        .ranking-container { max-height: 280px; overflow-y: auto; margin: 25px 0; text-align: left; padding-right: 10px; }
+        .ranking-container::-webkit-scrollbar { width: 6px; }
+        .ranking-container::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 4px; }
+        .ranking-container::-webkit-scrollbar-thumb { background: var(--cor-primaria); border-radius: 4px; }
+
+        .ranking-item {
+            display: flex; justify-content: space-between; align-items: center; padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.05); margin-bottom: 8px; border-radius: 12px; border-left: 4px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .ranking-item:hover { background: rgba(255, 255, 255, 0.1); transform: translateX(5px); }
+
+        /* Top 3 Decorativos */
+        .rank-1 { border-left-color: #ffd700; background: rgba(255, 215, 0, 0.1); }
+        .rank-2 { border-left-color: #c0c0c0; background: rgba(192, 192, 192, 0.1); }
+        .rank-3 { border-left-color: #cd7f32; background: rgba(205, 127, 50, 0.1); }
+
+        .rank-pos { font-weight: 900; font-size: 18px; color: #8bb4b8; width: 30px; }
+        .rank-1 .rank-pos { color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
+        .rank-2 .rank-pos { color: #c0c0c0; text-shadow: 0 0 10px rgba(192,192,192,0.5); }
+        .rank-3 .rank-pos { color: #cd7f32; text-shadow: 0 0 10px rgba(205,127,50,0.5); }
+
+        .rank-nome { flex-grow: 1; font-weight: 500; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
+        .rank-score { font-weight: 900; font-size: 22px; color: var(--cor-primaria); }
+
+        .loader-ranking { color: var(--cor-primaria); margin: 20px 0; font-weight: bold; animation: pulse-op 1s infinite alternate;}
     </style>
 </head>
 
@@ -241,16 +238,66 @@
     <video class="input_video"></video>
     
     <div class="workspace">
-        <div class="carregando-msg" id="msg-carregando">INICIANDO CÂMERA...</div>
+        <!-- Msg Background -->
+        <div class="carregando-msg" id="msg-carregando">LIGANDO CÂMERA...<br><span style="font-size:12px; color:#ccc;">Certifique-se de permitir o acesso e de não estar usando ela em outro app!</span></div>
+        
+        <!-- Camera Canvas -->
         <canvas class="output_canvas" width="840" height="600"></canvas>
 
+        <!-- Modais de Interface -->
+        <!-- Overlay Fim de Jogo -->
+        <div class="overlay" id="overlay-submit">
+            <div class="modal">
+                <h3>Tempo Esgotado!</h3>
+                <div class="modal-subtitulo">Sua Pontuação Final:</div>
+                <div class="placar-final" id="placar-display">0</div>
+                
+                <div class="modal-subtitulo" style="font-size: 14px; margin-bottom: 0;">Insira seu nome para o ranking (Apenas Ranked Mode):</div>
+                <input type="text" id="input-nome" placeholder="SEU NOME" maxlength="12" autocomplete="off">
+                
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2)" onclick="fecharModais(); resetarJogo();">AGORA NÃO</button>
+                    <button class="secundario" onclick="salvarScoreSupabase()">SALVAR SCORE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overlay Tabela de Ranking -->
+        <div class="overlay" id="overlay-ranking">
+            <div class="modal">
+                <button class="btn-fechar" onclick="fecharModais()">X</button>
+                <h3>🏆 Leaderboard</h3>
+                <div class="modal-subtitulo">RANKING GLOBAL SUPABASE</div>
+                
+                <div id="ranking-status" class="loader-ranking">Conectando ao banco...</div>
+                <div class="ranking-container" id="ranking-lista">
+                    <!-- Lista injetada dinamicamente via JS -->
+                </div>
+                <!-- Botão de emergência caso haja erros de conexao pra fechar e jogar -->
+                <button onclick="fecharModais()" style="margin-top: 10px;">VOLTAR AO JOGO</button>
+            </div>
+        </div>
+
+        <!-- HUD UI -->
         <div class="hud" id="hud" style="opacity: 0; transition: opacity 1s">
+            <button class="btn-modo" id="btn-modo-toggle" onclick="alternarModoDeJogo()">🏆 JOGAR MODO RANKED</button>
+            <button class="btn-ranking" onclick="abrirModalRanking()">VER RANKING 🏆</button>
+            
             <div class="painel-topo">
-                <div class="painel contador-box">
-                    <h1>Sessão 67</h1>
-                    <div class="contador-valor" id="ui-contador">0</div>
+                <div class="topo-estatistica">
+                    <!-- Painel Tempo -->
+                    <div class="painel timer-box timer-desativado" id="painel-timer">
+                        <h1>TEMPO RESTANTE</h1>
+                        <div class="timer-valor" id="ui-timer">∞</div>
+                    </div>
+                    <!-- Painel Pontos -->
+                    <div class="painel contador-box">
+                        <h1>PONTOS</h1>
+                        <div class="contador-valor" id="ui-contador">0</div>
+                    </div>
                 </div>
 
+                <!-- Status dos Sensores -->
                 <div class="painel status-box">
                     <h2>Movimento: <span class="fase-destaque" id="ui-fase">SUBIR MÃOS</span></h2>
                     <div class="indicadores">
@@ -267,55 +314,238 @@
             </div>
 
             <div class="controles">
-                <button id="btn-reiniciar">Zerar Sistema</button>
+                <button id="btn-reiniciar" onclick="resetarJogo(true)">INTERROMPER / ZERAR</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Elementos do DOM
+        /* ==========================================================
+           1. CONFIGURAÇÃO SUPABASE
+           Substitua estas strings pelas suas credenciais do projeto!
+           ========================================================== */
+        const SUPABASE_URL = 'https://dmhkrexhnlgxjowflizw.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'sb_publishable_9tWZBwCQctawE82vIpZywQ_UUAAZNYT'; 
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Referências DOM - Modais
+        const overlaySubmit = document.getElementById('overlay-submit');
+        const overlayRanking = document.getElementById('overlay-ranking');
+        const placarDisplay = document.getElementById('placar-display');
+        const inputNome = document.getElementById('input-nome');
+        const listContainer = document.getElementById('ranking-lista');
+        const statusRankingText = document.getElementById('ranking-status');
+
+        // Referências DOM - Mecânica
         const videoElement = document.querySelector('.input_video');
         const canvasElement = document.querySelector('.output_canvas');
         const canvasCtx = canvasElement.getContext('2d');
         const msgCarregando = document.getElementById('msg-carregando');
         const hud = document.getElementById('hud');
-
-        // Elementos da UI
         const uiContador = document.getElementById('ui-contador');
+        const uiTimer = document.getElementById('ui-timer');
+        const painelTimer = document.getElementById('painel-timer');
+        const btnModoToggle = document.getElementById('btn-modo-toggle');
         const uiFase = document.getElementById('ui-fase');
         const bolaEsq = document.getElementById('bola-esq');
         const bolaDir = document.getElementById('bola-dir');
-        const btnReiniciar = document.getElementById('btn-reiniciar');
 
-        // Estado da Detecção
+        // Lógica do Timer e Jogo
         let contador67 = 0;
         let faseAtual = 'SUBINDO';
         let tocouMao1 = false;
         let tocouMao2 = false;
 
-        // Limites ajustados para ser perceptível e confortável
+        let modoLivre = true; // MODO DE JOGO: Se true, o tempo não roda e não há submissão. Começamos no livre.
+        let limiteTempo = 60; // 60 Segundos
+        let tempoRestante = 60;
+        let cronometro = null;
+        let jogoEmAndamento = false;
+        let jogoFinalizado = false; 
+
         const LIMITE_SUPERIOR = 0.35;
         const LIMITE_INFERIOR = 0.65;
 
-        btnReiniciar.addEventListener('click', () => {
+        /* ==========================================================
+           MODO DE JOGO ALTERAÇÃO
+           ========================================================== */
+        function alternarModoDeJogo() {
+            // Se tiver em andamento no ranked, avisa
+            if (jogoEmAndamento && !modoLivre && tempoRestante < 60) {
+                if (!confirm("Isso irá cancelar sua partida Ranked atual. Deseja trocar para Modo Livre?")) return;
+            }
+
+            modoLivre = !modoLivre;
+
+            if (modoLivre) {
+                btnModoToggle.innerHTML = "🏆 JOGAR MODO RANKED";
+                btnModoToggle.classList.remove("livre");
+                painelTimer.classList.add("timer-desativado");
+                uiTimer.innerText = "∞";
+            } else {
+                btnModoToggle.innerHTML = "♾️ VOLTAR PRO TREINO";
+                btnModoToggle.classList.add("livre");
+                painelTimer.classList.remove("timer-desativado");
+                uiTimer.innerText = "60s";
+            }
+
+            resetarJogo(true);
+        }
+
+        /* ==========================================================
+           MÓDULO: BANCO DE DADOS (SUPABASE)
+           ========================================================== */
+        async function fetchRanking() {
+            listContainer.innerHTML = '';
+            statusRankingText.style.display = 'block';
+            statusRankingText.innerText = 'Buscando do Supabase...';
+
+            if(SUPABASE_URL.includes('<SUA')) {
+                statusRankingText.innerText = "COLOQUE SUAS CHAVES DO SUPABASE NO CÓDIGO!";
+                statusRankingText.style.color = 'var(--cor-secundaria)';
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('leaderboard')
+                    .select('*')
+                    .order('score', { ascending: false })
+                    .limit(10);
+
+                if (error) throw error;
+                
+                statusRankingText.style.display = 'none';
+
+                if(data.length === 0) {
+                    listContainer.innerHTML = '<div style="text-align:center; color:#ccc;">Nenhum placar ainda. Seja o primeiro!</div>';
+                } else {
+                    data.forEach((row, index) => {
+                        const rankClass = index < 3 ? `rank-${index + 1}` : '';
+                        const elementHtml = `
+                            <div class="ranking-item ${rankClass}">
+                                <div class="rank-pos">#${index + 1}</div>
+                                <div class="rank-nome">${row.nome || 'ANÔNIMO'}</div>
+                                <div class="rank-score">${row.score}</div>
+                            </div>
+                        `;
+                        listContainer.innerHTML += elementHtml;
+                    });
+                }
+            } catch (err) {
+                console.error("Erro fetch Supabase: ", err);
+                statusRankingText.innerText = "Erro ao carregar ranking. Verifique o console.";
+                statusRankingText.style.color = 'var(--cor-secundaria)';
+            }
+        }
+
+        async function salvarScoreSupabase() {
+            const nomeStr = inputNome.value.trim() || 'Desconhecido';
+            if(SUPABASE_URL.includes('<SUA')) {
+                alert("Score salvo localmente. Chave Supabase não configurada no código.");
+                fecharModais();
+                resetarJogo(true);
+                return;
+            }
+
+            try {
+                const btns = overlaySubmit.querySelectorAll('button');
+                btns.forEach(b => b.disabled = true);
+                
+                const { error } = await supabaseClient
+                    .from('leaderboard')
+                    .insert([{ nome: nomeStr, score: contador67 }]);
+
+                if (error) throw error;
+                
+                btns.forEach(b => b.disabled = false);
+                fecharModais();
+                abrirModalRanking();
+            } catch (err) {
+                console.error(err);
+                alert("Erro ao salvar no banco. A Tabela existe?");
+                const btns = overlaySubmit.querySelectorAll('button');
+                btns.forEach(b => b.disabled = false);
+            }
+        }
+
+        /* ==========================================================
+           MÓDULO: REGRAS E INTERFACE DE JOGO
+           ========================================================== */
+        function iniciarContagemRegressiva() {
+            jogoEmAndamento = true;
+            jogoFinalizado = false;
+            tempoRestante = limiteTempo;
+            uiTimer.style.color = "var(--cor-primaria)";
+            atualizarTextos();
+
+            cronometro = setInterval(() => {
+                tempoRestante--;
+                
+                if (tempoRestante <= 10) {
+                    uiTimer.style.color = "var(--cor-secundaria)";
+                }
+
+                if (tempoRestante <= 0) {
+                    finalizarSessao();
+                }
+                atualizarTextos();
+            }, 1000);
+        }
+
+        function finalizarSessao() {
+            clearInterval(cronometro);
+            jogoEmAndamento = false;
+            jogoFinalizado = true;
+            uiTimer.innerText = "0s";
+            
+            // Pop up Modal de Fim de Jogo -> Apenas para Ranked!
+            // No modo livre isso não deve acontecer (porque a contagem nunca devia ter rodado, mas fica o bloqueio)
+            if(!modoLivre) {
+                placarDisplay.innerText = contador67;
+                inputNome.value = "";
+                overlaySubmit.classList.add('ativo');
+            }
+        }
+
+        function resetarJogo(forcar = false) {
+            clearInterval(cronometro);
+            jogoEmAndamento = false;
+            jogoFinalizado = false;
             contador67 = 0;
+            tempoRestante = limiteTempo;
             faseAtual = 'SUBINDO';
             tocouMao1 = false;
             tocouMao2 = false;
-            uiContador.innerText = '0';
-            atualizarUI();
-        });
+            
+            if(!modoLivre) {
+                uiTimer.style.color = "var(--cor-secundaria)";
+            }
+            atualizarTextos();
+        }
 
-        function atualizarUI() {
-            // Anima o contador apenas se ele mudar (e for maior que 0)
+        function fecharModais() {
+            overlaySubmit.classList.remove('ativo');
+            overlayRanking.classList.remove('ativo');
+            if (jogoFinalizado) resetarJogo(true);
+        }
+
+        function abrirModalRanking() {
+            overlaySubmit.classList.remove('ativo');
+            overlayRanking.classList.add('ativo');
+            fetchRanking();
+        }
+
+        function atualizarTextos() {
+            if(!modoLivre) uiTimer.innerText = tempoRestante + 's';
+            else uiTimer.innerText = "∞";
+
             if (uiContador.innerText !== contador67.toString()) {
                 uiContador.innerText = contador67;
                 uiContador.classList.remove('animar-pop');
-                void uiContador.offsetWidth; // Força recálculo do DOM para reiniciar animação
+                void uiContador.offsetWidth; 
                 uiContador.classList.add('animar-pop');
             }
-            
-            // Atualiza fase e estilo
             if (faseAtual === 'SUBINDO') {
                 uiFase.innerText = 'SUBIR MÃOS';
                 uiFase.className = 'fase-destaque';
@@ -323,15 +553,13 @@
                 uiFase.innerText = 'DESCER MÃOS';
                 uiFase.className = 'fase-destaque fase-descendo';
             }
-
-            // Atualiza luzes indicadoras (Mão 1 visualmente à esquerda, Mão 2 à direita)
-            if (tocouMao1) bolaEsq.classList.add('ok'); else bolaEsq.classList.remove('ok');
-            if (tocouMao2) bolaDir.classList.add('ok'); else bolaDir.classList.remove('ok');
         }
 
+        /* ==========================================================
+           MÓDULO: COMPUTER VISION & LOGICA DO GESTO
+           ========================================================== */
         function onResults(results) {
-            // Revela a interface quando a câmera começar a mandar frames
-            if (hud.style.opacity === '0') {
+            if (hud.style.opacity !== '1') {
                 hud.style.opacity = '1';
                 msgCarregando.style.display = 'none';
             }
@@ -340,54 +568,47 @@
             canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
             canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
-            // Filtro cinemático escurecendo o vídeo para dar mais contraste ao esqueleto digital e neon
+            if (overlaySubmit.classList.contains('ativo') || overlayRanking.classList.contains('ativo')) {
+                canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                canvasCtx.fillRect(0, 0, canvasElement.width, canvasElement.height);
+                canvasCtx.restore();
+                return;
+            }
+
             canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.4)';
             canvasCtx.fillRect(0, 0, canvasElement.width, canvasElement.height);
 
-            // Desenhar Linhas de Alvo
             canvasCtx.lineWidth = 3;
+            const opacidadeCores = jogoFinalizado ? 0.05 : 1;
             
-            // Linha Guia Superior
             canvasCtx.beginPath();
             canvasCtx.moveTo(0, canvasElement.height * LIMITE_SUPERIOR);
             canvasCtx.lineTo(canvasElement.width, canvasElement.height * LIMITE_SUPERIOR);
-            canvasCtx.strokeStyle = faseAtual === 'SUBINDO' ? '#00e5ff' : 'rgba(0, 229, 255, 0.2)';
-            canvasCtx.shadowBlur = faseAtual === 'SUBINDO' ? 20 : 0;
+            canvasCtx.strokeStyle = faseAtual === 'SUBINDO' ? `rgba(0, 229, 255, ${opacidadeCores})` : `rgba(0, 229, 255, ${opacidadeCores * 0.2})`;
+            canvasCtx.shadowBlur = faseAtual === 'SUBINDO' && !jogoFinalizado ? 20 : 0;
             canvasCtx.shadowColor = '#00e5ff';
             canvasCtx.stroke();
 
-            // Linha Guia Inferior
             canvasCtx.beginPath();
             canvasCtx.moveTo(0, canvasElement.height * LIMITE_INFERIOR);
             canvasCtx.lineTo(canvasElement.width, canvasElement.height * LIMITE_INFERIOR);
-            canvasCtx.strokeStyle = faseAtual === 'DESCENDO' ? '#ff3d00' : 'rgba(255, 61, 0, 0.2)';
-            canvasCtx.shadowBlur = faseAtual === 'DESCENDO' ? 20 : 0;
+            canvasCtx.strokeStyle = faseAtual === 'DESCENDO' ? `rgba(255, 61, 0, ${opacidadeCores})` : `rgba(255, 61, 0, ${opacidadeCores * 0.2})`;
+            canvasCtx.shadowBlur = faseAtual === 'DESCENDO' && !jogoFinalizado ? 20 : 0;
             canvasCtx.shadowColor = '#ff3d00';
             canvasCtx.stroke();
+            canvasCtx.shadowBlur = 0; 
 
-            canvasCtx.shadowBlur = 0; // Limpa para os próximos desenhos
-
-            // Lógica de Detecção
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                
-                // Mapeia até 2 mãos para processar
+            if (!jogoFinalizado && results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 let handsData = results.multiHandLandmarks.slice(0, 2);
-                
-                // Usando a coordenada X para identificar a mão.
-                // Isso resolve as inconsistências da mediapipe com mãos invertidas!
-                // Mão 1 terá menor X, Mão 2 terá maior X.
                 handsData.sort((a, b) => a[9].x - b[9].x);
 
                 handsData.forEach((landmarks, index) => {
-                    // Esqueleto cibernético clean
                     drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: 'rgba(255, 255, 255, 0.5)', lineWidth: 3 });
                     drawLandmarks(canvasCtx, landmarks, { color: '#00e5ff', fillColor: '#050505', lineWidth: 2, radius: 4 });
 
-                    // O ponto 9 é a articulação central principal (nó inferior do dedo médio). Super estável.
                     const yMao = landmarks[9].y;
                     const xMao = landmarks[9].x;
 
-                    // Destaca o ponto rastreado
                     canvasCtx.beginPath();
                     canvasCtx.arc(xMao * canvasElement.width, yMao * canvasElement.height, 10, 0, 2 * Math.PI);
                     canvasCtx.fillStyle = 'rgba(0, 229, 255, 0.9)';
@@ -396,14 +617,12 @@
                     canvasCtx.fill();
                     canvasCtx.shadowBlur = 0;
 
-                    // MOTOR LÓGICO ESTÁVEL
                     if (faseAtual === 'SUBINDO') {
                         if (yMao < LIMITE_SUPERIOR) {
                             if (index === 0) tocouMao1 = true;
                             if (index === 1) tocouMao2 = true;
                         }
 
-                        // As duas concluíram o percurso?
                         if (handsData.length === 2 && tocouMao1 && tocouMao2) {
                             faseAtual = 'DESCENDO';
                             tocouMao1 = false;
@@ -421,12 +640,25 @@
                             faseAtual = 'SUBINDO';
                             tocouMao1 = false;
                             tocouMao2 = false;
+
+                            // START TIMER NO PRIMEIRO PONTO VALIDO (APENAS RANKED)
+                            if (!jogoEmAndamento && contador67 === 1 && !modoLivre) {
+                                iniciarContagemRegressiva();
+                            }
                         }
                     }
                 });
             }
 
-            atualizarUI();
+            if (!jogoFinalizado) {
+                if (tocouMao1) bolaEsq.classList.add('ok'); else bolaEsq.classList.remove('ok');
+                if (tocouMao2) bolaDir.classList.add('ok'); else bolaDir.classList.remove('ok');
+            } else {
+                bolaEsq.classList.remove('ok');
+                bolaDir.classList.remove('ok');
+            }
+
+            atualizarTextos();
             canvasCtx.restore();
         }
 
@@ -445,16 +677,19 @@
 
         hands.onResults(onResults);
 
+        // ALTERAÇÃO DE BUG FIX NA CÂMERA:
+        // A proporção 640x480 é nativa e mais estável e permitida por quase todas webcams sem erros esquisitos.
+        // O Canvas acima lida em esticar pro visual impecável 840x600 via css.
         const camera = new Camera(videoElement, {
             onFrame: async () => {
                 await hands.send({ image: videoElement });
             },
-            width: 840,
-            height: 600
+            width: 640,
+            height: 480
         });
 
         camera.start().catch(err => {
-            msgCarregando.innerText = "ERRO AO ACESSAR A CÂMERA.";
+            msgCarregando.innerText = "ERRO AO ACESSAR A CÂMERA. Tente recarregar a página e permitir o acesso.";
             msgCarregando.style.color = "#ff3d00";
             msgCarregando.style.animation = "none";
             console.error(err);
