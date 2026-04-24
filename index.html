@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Monitoramento de Mãos - Web</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #121212;
+            font-family: sans-serif;
+        }
+
+        .container {
+            position: relative;
+        }
+
+        canvas {
+            border: 3px solid #333;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            transform: scaleX(-1);
+        }
+
+        .input_video {
+            display: none;
+        }
+
+        #btn-reiniciar {
+            position: absolute;
+            bottom: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: #ff3b30;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        #btn-reiniciar:hover {
+            background-color: #cc2e26;
+        }
+    </style>
+</head>
+
+<body>
+
+    <video class="input_video"></video>
+
+    <div class="container">
+        <canvas class="output_canvas" width="640" height="480"></canvas>
+        <button id="btn-reiniciar">Reiniciar Contador</button>
+    </div>
+
+    <script>
+        const videoElement = document.querySelector('.input_video');
+        const canvasElement = document.querySelector('.output_canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const btnReiniciar = document.getElementById('btn-reiniciar');
+
+        // 1. O Novo "Cérebro" Assíncrono
+        let contador67 = 0;
+        let faseAtual = 'SUBINDO'; // Alterna entre 'SUBINDO' e 'DESCENDO'
+
+        // Memória individual das mãos
+        let tocouTopoEsq = false;
+        let tocouTopoDir = false;
+        let tocouBaseEsq = false;
+        let tocouBaseDir = false;
+
+        const LIMITE_SUPERIOR = 0.4;
+        const LIMITE_INFERIOR = 0.6;
+
+        btnReiniciar.addEventListener('click', () => {
+            contador67 = 0;
+            faseAtual = 'SUBINDO';
+            tocouTopoEsq = false;
+            tocouTopoDir = false;
+            tocouBaseEsq = false;
+            tocouBaseDir = false;
+        });
+
+        function onResults(results) {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+            // Linhas de Limite
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(0, canvasElement.height * LIMITE_SUPERIOR);
+            canvasCtx.lineTo(canvasElement.width, canvasElement.height * LIMITE_SUPERIOR);
+            canvasCtx.strokeStyle = 'rgba(0, 255, 0, 0.7)';
+            canvasCtx.lineWidth = 2;
+            canvasCtx.stroke();
+
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(0, canvasElement.height * LIMITE_INFERIOR);
+            canvasCtx.lineTo(canvasElement.width, canvasElement.height * LIMITE_INFERIOR);
+            canvasCtx.strokeStyle = 'rgba(255, 0, 0, 0.7)';
+            canvasCtx.stroke();
+
+            // 2. Lógica de Rastreamento Independente
+            if (results.multiHandLandmarks && results.multiHandedness) {
+
+                // Renderiza os esqueletos
+                for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+                    const landmarks = results.multiHandLandmarks[i];
+                    drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 4 });
+                    drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', lineWidth: 2, radius: 3 });
+
+                    // Ponto de referência e lado da mão
+                    const yMao = landmarks[9].y; // Nó central
+                    const ladoMao = results.multiHandedness[i].label; // 'Left' ou 'Right'
+
+                    // Marcador visual amarelo no ponto de rastreamento
+                    canvasCtx.fillStyle = 'yellow';
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(landmarks[9].x * canvasElement.width, yMao * canvasElement.height, 10, 0, 2 * Math.PI);
+                    canvasCtx.fill();
+
+                    // Alimentando a Máquina de Estados
+                    if (faseAtual === 'SUBINDO') {
+                        if (yMao < LIMITE_SUPERIOR) {
+                            if (ladoMao === 'Left') tocouTopoEsq = true;
+                            if (ladoMao === 'Right') tocouTopoDir = true;
+                        }
+
+                        // Se AMBAS já visitaram o topo em algum momento...
+                        if (tocouTopoEsq && tocouTopoDir) {
+                            faseAtual = 'DESCENDO';
+                            tocouBaseEsq = false; // Prepara para a descida
+                            tocouBaseDir = false;
+                        }
+                    }
+                    else if (faseAtual === 'DESCENDO') {
+                        if (yMao > LIMITE_INFERIOR) {
+                            if (ladoMao === 'Left') tocouBaseEsq = true;
+                            if (ladoMao === 'Right') tocouBaseDir = true;
+                        }
+
+                        // Se AMBAS já visitaram a base... CONTA!
+                        if (tocouBaseEsq && tocouBaseDir) {
+                            contador67++;
+                            faseAtual = 'SUBINDO';
+                            tocouTopoEsq = false; // Prepara para a próxima subida
+                            tocouTopoDir = false;
+                        }
+                    }
+                }
+            }
+
+            // 3. Renderização do Painel (Texto invertido para corrigir o espelho do CSS)
+            canvasCtx.save();
+            canvasCtx.scale(-1, 1);
+            canvasCtx.translate(-canvasElement.width, 0);
+
+            canvasCtx.fillStyle = "white";
+            canvasCtx.font = "bold 36px Arial";
+            canvasCtx.fillText(`Contador 67: ${contador67}`, 20, 50);
+
+            canvasCtx.font = "20px Arial";
+            canvasCtx.fillStyle = "lightgray";
+            canvasCtx.fillText(`Fase: ${faseAtual}`, 20, 80);
+
+            // Feedback visual de qual mão o sistema registrou
+            let statusEsq = (faseAtual === 'SUBINDO' ? tocouTopoEsq : tocouBaseEsq) ? "OK" : "Pendente";
+            let statusDir = (faseAtual === 'SUBINDO' ? tocouTopoDir : tocouBaseDir) ? "OK" : "Pendente";
+
+            canvasCtx.font = "16px Arial";
+            canvasCtx.fillStyle = "yellow";
+            canvasCtx.fillText(`Mão 1: ${statusEsq} | Mão 2: ${statusDir}`, 20, 110);
+
+            canvasCtx.restore();
+            canvasCtx.restore();
+        }
+
+        const hands = new Hands({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }
+        });
+
+        hands.setOptions({
+            maxNumHands: 2,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        hands.onResults(onResults);
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({ image: videoElement });
+            },
+            width: 640,
+            height: 480
+        });
+
+        camera.start().catch(err => {
+            alert("Erro crítico ao acessar a câmera. Verifique as permissões do navegador.");
+            console.error(err);
+        });
+    </script>
+</body>
+
+</html>
