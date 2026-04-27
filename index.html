@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Detector Gesto 67 - Supremo Supabase</title>
+    <title>FAZ O 67! - O Desafio Supremo</title>
     <!-- Fonte moderna e minimalista do Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700;900&display=swap" rel="stylesheet">
     
@@ -97,6 +97,19 @@
         .contador-valor {
             font-size: 54px; font-weight: 900; margin: 0; color: var(--cor-primaria); line-height: 1;
             text-shadow: 0 0 20px rgba(0, 229, 255, 0.4); display: inline-block;
+            transition: all 0.2s;
+        }
+        
+        /* Fogo e Intensidade */
+        .contador-valor.fogo {
+            color: #fff;
+            transform: scale(1.1);
+            text-shadow: 0 0 15px #ffea00, 0 0 30px #ff3d00, 0 0 60px #ff3d00, 0 0 100px #ff0000;
+        }
+
+        .hud-fogo .painel {
+            border-color: #ff3d00;
+            box-shadow: 0 0 25px rgba(255, 61, 0, 0.3);
         }
 
         .timer-valor {
@@ -425,7 +438,7 @@
            Substitua estas strings pelas suas credenciais do projeto!
            ========================================================== */
         const SUPABASE_URL = 'https://dmhkrexhnlgxjowflizw.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'sb_publishable_9tWZBwCQctawE82vIpZywQ_UUAAZNYT'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRtaGtyZXhobmxneGpvd2ZsaXp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwMzkzMzAsImV4cCI6MjA5MjYxNTMzMH0.NbjJZ7AuAqi6ssaQzGJjz-SrEcV_I8c9buJE-5XJjmk'; 
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Referências DOM - Modais
@@ -437,6 +450,7 @@
         const statusRankingText = document.getElementById('ranking-status');
 
         // Referências DOM - Mecânica
+        const workspaceElement = document.querySelector('.workspace');
         const videoElement = document.querySelector('.input_video');
         const canvasElement = document.querySelector('.output_canvas');
         const canvasCtx = canvasElement.getContext('2d');
@@ -453,6 +467,133 @@
         // Lógica do Timer e Jogo
         let contador67 = 0;
         let faseAtual = 'SUBINDO';
+        
+        // ==========================================================
+        // MÓDULO: EFEITOS DOPAMINA 67
+        // ==========================================================
+        let particulas = [];
+        let popups = [];
+        let shakePower = 0;
+
+        function criarExplosao(x, y, intensidade) {
+            // Otimização: limite menor de partículas limitando lag no Canvas
+            const numParticulas = Math.min(10 + intensidade, 30); 
+            for(let i=0; i<numParticulas; i++) {
+                const isFogo = Math.random() > 0.3;
+                particulas.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * (15 + intensidade * 0.5),
+                    vy: (Math.random() - 0.5) * (15 + intensidade * 0.5) - (5 + intensidade*0.1),
+                    vida: 1.0,
+                    decaimento: 0.02 + Math.random() * 0.04,
+                    tipo: isFogo ? 'fogo' : 'texto',
+                    texto: Math.random() > 0.4 ? '67' : '🔥',
+                    tamanho: 20 + Math.random() * 30 + (intensidade*1.0),
+                    cor: isFogo ? `hsl(${Math.floor(Math.random()*40 + 10)}, 100%, 50%)` : '#ffea00'
+                });
+            }
+        }
+
+        function criarPopup(texto, x, y, escala = 1) {
+            popups.push({ texto, x: x, y: y, vida: 1.5, escala: escala });
+        }
+
+        function tremerTela(forca) {
+            shakePower = Math.min(forca, 30); // Limita o shake para nao dar lag e tontura
+        }
+
+        function aplicarGlowCorpo(heat) {
+            // Roda apenas na pontuação (evita forçar o CSS todo frame e disparar reflow alto)
+            if (heat > 0) {
+                const red = 255;
+                const green = Math.floor(229 - heat*180); 
+                const blue = Math.floor(255 - heat*255); 
+                workspaceElement.style.boxShadow = `0 15px 50px rgba(0, 0, 0, 0.8), 0 0 ${20 + heat*120}px rgba(${red}, ${green}, ${blue}, ${0.1 + heat*0.7})`;
+                
+                if(contador67 >= 10 && !uiContador.classList.contains('fogo')) {
+                     uiContador.classList.add('fogo');
+                     hud.classList.add('hud-fogo');
+                } else if (contador67 < 10) {
+                     uiContador.classList.remove('fogo');
+                     hud.classList.remove('hud-fogo');
+                }
+            } else {
+                workspaceElement.style.boxShadow = `0 15px 50px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 229, 255, 0.1)`;
+                uiContador.classList.remove('fogo');
+                hud.classList.remove('hud-fogo');
+            }
+        }
+
+        function atualizarEfeitosDopamina(ctx) {
+            // O Tremer agora ocorre num nível base no canvas (ver Função onResults) e não no DOM!
+
+
+            // Partículas limitadas sem sombras pra CPU processar sem gargalos
+            for(let i = particulas.length - 1; i >= 0; i--) {
+                let p = particulas[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.6; // Gravidade
+                p.vida -= p.decaimento;
+
+                if(p.vida <= 0) {
+                    particulas.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.vida);
+                ctx.fillStyle = p.cor;
+                if(p.tipo === 'fogo') {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.tamanho * p.vida, 0, Math.PI*2);
+                    ctx.fill();
+                } else {
+                    ctx.translate(p.x, p.y);
+                    ctx.scale(-1, 1); // CORREÇÃO INVERSÃO DE ESPELHO NO CANVAS
+                    let textScale = Math.max(0.1, (p.tamanho * p.vida) / 30);
+                    ctx.scale(textScale, textScale);
+                    ctx.font = '900 30px Outfit';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(p.texto, 0, 0);
+                }
+                ctx.restore();
+            }
+
+            // Popups de texto - com correção de inversão no eixo
+            for(let i = popups.length - 1; i >= 0; i--) {
+                let p = popups[i];
+                p.vida -= 0.035; 
+                p.y -= 3;
+                
+                if(p.vida <= 0) { popups.splice(i, 1); continue; }
+                
+                ctx.save();
+                ctx.globalAlpha = Math.min(1, Math.max(0, p.vida * 1.5)); 
+                ctx.translate(p.x, p.y);
+                
+                // CORREÇÃO INVERSÃO E ESCALA
+                let scale = (1 + (1.5 - p.vida)*0.5) * p.escala; 
+                ctx.scale(-scale, scale); 
+                
+                // Rotação subtraída pro plano espelhado e menos pesada
+                ctx.rotate(-(Math.random()-0.5)*0.1 * ((1.5-p.vida)*2));
+                
+                ctx.font = '900 60px Outfit';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                ctx.fillStyle = "#ffeb3b";
+                ctx.fillText(p.texto, 0, 0);
+                
+                ctx.strokeStyle = '#ff3d00';
+                ctx.lineWidth = 3;
+                ctx.strokeText(p.texto, 0, 0);
+                
+                ctx.restore();
+            }
+        }
         let tocouMao1 = false;
         let tocouMao2 = false;
 
@@ -617,6 +758,12 @@
             faseAtual = 'SUBINDO';
             tocouMao1 = false;
             tocouMao2 = false;
+
+            particulas = [];
+            popups = [];
+            shakePower = 0;
+            workspaceElement.style.transform = `translate(0px, 0px)`;
+            aplicarGlowCorpo(0);
             
             if(!modoLivre) {
                 uiTimer.style.color = "var(--cor-secundaria)";
@@ -636,9 +783,15 @@
             fetchRanking();
         }
 
+        let lastTimerText = "";
+        let lastFaseText = "";
+
         function atualizarTextos() {
-            if(!modoLivre) uiTimer.innerText = tempoRestante + 's';
-            else uiTimer.innerText = "∞";
+            let currentTimerText = !modoLivre ? tempoRestante + 's' : "∞";
+            if (lastTimerText !== currentTimerText) {
+                uiTimer.innerText = currentTimerText;
+                lastTimerText = currentTimerText;
+            }
 
             if (uiContador.innerText !== contador67.toString()) {
                 uiContador.innerText = contador67;
@@ -646,12 +799,16 @@
                 void uiContador.offsetWidth; 
                 uiContador.classList.add('animar-pop');
             }
-            if (faseAtual === 'SUBINDO') {
-                uiFase.innerText = 'SUBIR MÃOS';
-                uiFase.className = 'fase-destaque';
-            } else {
-                uiFase.innerText = 'DESCER MÃOS';
-                uiFase.className = 'fase-destaque fase-descendo';
+
+            if (lastFaseText !== faseAtual) {
+                if (faseAtual === 'SUBINDO') {
+                    uiFase.innerText = 'SUBIR MÃOS';
+                    uiFase.className = 'fase-destaque';
+                } else {
+                    uiFase.innerText = 'DESCER MÃOS';
+                    uiFase.className = 'fase-destaque fase-descendo';
+                }
+                lastFaseText = faseAtual;
             }
         }
 
@@ -666,6 +823,17 @@
 
             canvasCtx.save();
             canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            // Shaker GPU nativo
+            if (shakePower > 0.5) {
+                let offsetX = (Math.random() - 0.5) * shakePower;
+                let offsetY = (Math.random() - 0.5) * shakePower;
+                canvasCtx.translate(offsetX, offsetY);
+                shakePower *= 0.85;
+            } else {
+                shakePower = 0;
+            }
+
             canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
             if (overlaySubmit.classList.contains('ativo') || overlayRanking.classList.contains('ativo')) {
@@ -678,25 +846,59 @@
             canvasCtx.fillStyle = 'rgba(0, 0, 0, 0.4)';
             canvasCtx.fillRect(0, 0, canvasElement.width, canvasElement.height);
 
+            // Marca d'água 67 de fundo na tela de gameplay
+            canvasCtx.save();
+            canvasCtx.translate(canvasElement.width/2, canvasElement.height/2);
+            canvasCtx.scale(-1, 1); // CORREÇÃO INVERSÃO
+            canvasCtx.font = '900 400px Outfit';
+            canvasCtx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+            canvasCtx.textAlign = 'center';
+            canvasCtx.textBaseline = 'middle';
+            canvasCtx.fillText('67', 0, 0);
+            canvasCtx.restore();
+
             canvasCtx.lineWidth = 3;
             const opacidadeCores = jogoFinalizado ? 0.05 : 1;
             
+            // Cores dinâmicas baseadas na temperatura (score)
+            const heatLocal = Math.min(contador67, 50) / 50; 
+            const baseSubindoR = Math.floor(0 + heatLocal * 255);
+            const baseSubindoG = Math.floor(229 - heatLocal * 168); // chega ate 61
+            const baseSubindoB = Math.floor(255 - heatLocal * 255);
+            const corSubindo = `rgba(${baseSubindoR}, ${baseSubindoG}, ${baseSubindoB}, ${opacidadeCores})`;
+            const corSubindoFraca = `rgba(${baseSubindoR}, ${baseSubindoG}, ${baseSubindoB}, ${opacidadeCores * 0.2})`;
+
+            // Linha Superior
+            if (faseAtual === 'SUBINDO' && !jogoFinalizado) {
+                canvasCtx.beginPath();
+                canvasCtx.moveTo(0, canvasElement.height * LIMITE_SUPERIOR);
+                canvasCtx.lineTo(canvasElement.width, canvasElement.height * LIMITE_SUPERIOR);
+                canvasCtx.lineWidth = 15;
+                canvasCtx.strokeStyle = heatLocal > 0.5 ? 'rgba(255, 61, 0, 0.2)' : 'rgba(0, 229, 255, 0.2)';
+                canvasCtx.stroke();
+            }
             canvasCtx.beginPath();
             canvasCtx.moveTo(0, canvasElement.height * LIMITE_SUPERIOR);
             canvasCtx.lineTo(canvasElement.width, canvasElement.height * LIMITE_SUPERIOR);
-            canvasCtx.strokeStyle = faseAtual === 'SUBINDO' ? `rgba(0, 229, 255, ${opacidadeCores})` : `rgba(0, 229, 255, ${opacidadeCores * 0.2})`;
-            canvasCtx.shadowBlur = faseAtual === 'SUBINDO' && !jogoFinalizado ? 20 : 0;
-            canvasCtx.shadowColor = '#00e5ff';
+            canvasCtx.lineWidth = 3;
+            canvasCtx.strokeStyle = faseAtual === 'SUBINDO' ? corSubindo : corSubindoFraca;
             canvasCtx.stroke();
 
+            // Linha Inferior
+            if (faseAtual === 'DESCENDO' && !jogoFinalizado) {
+                canvasCtx.beginPath();
+                canvasCtx.moveTo(0, canvasElement.height * LIMITE_INFERIOR);
+                canvasCtx.lineTo(canvasElement.width, canvasElement.height * LIMITE_INFERIOR);
+                canvasCtx.lineWidth = 15;
+                canvasCtx.strokeStyle = 'rgba(255, 61, 0, 0.2)';
+                canvasCtx.stroke();
+            }
             canvasCtx.beginPath();
             canvasCtx.moveTo(0, canvasElement.height * LIMITE_INFERIOR);
             canvasCtx.lineTo(canvasElement.width, canvasElement.height * LIMITE_INFERIOR);
+            canvasCtx.lineWidth = 3;
             canvasCtx.strokeStyle = faseAtual === 'DESCENDO' ? `rgba(255, 61, 0, ${opacidadeCores})` : `rgba(255, 61, 0, ${opacidadeCores * 0.2})`;
-            canvasCtx.shadowBlur = faseAtual === 'DESCENDO' && !jogoFinalizado ? 20 : 0;
-            canvasCtx.shadowColor = '#ff3d00';
-            canvasCtx.stroke();
-            canvasCtx.shadowBlur = 0; 
+            canvasCtx.stroke(); 
 
             if (!jogoFinalizado && results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 let handsData = results.multiHandLandmarks.slice(0, 2);
@@ -709,13 +911,16 @@
                     const yMao = landmarks[9].y;
                     const xMao = landmarks[9].x;
 
+                    // Glow falso otimizado
+                    canvasCtx.beginPath();
+                    canvasCtx.arc(xMao * canvasElement.width, yMao * canvasElement.height, 22, 0, 2 * Math.PI);
+                    canvasCtx.fillStyle = 'rgba(0, 229, 255, 0.25)';
+                    canvasCtx.fill();
+
                     canvasCtx.beginPath();
                     canvasCtx.arc(xMao * canvasElement.width, yMao * canvasElement.height, 10, 0, 2 * Math.PI);
                     canvasCtx.fillStyle = 'rgba(0, 229, 255, 0.9)';
-                    canvasCtx.shadowBlur = 15;
-                    canvasCtx.shadowColor = '#00e5ff';
                     canvasCtx.fill();
-                    canvasCtx.shadowBlur = 0;
 
                     if (faseAtual === 'SUBINDO') {
                         if (yMao < LIMITE_SUPERIOR) {
@@ -741,6 +946,31 @@
                             tocouMao1 = false;
                             tocouMao2 = false;
 
+                            // =========== EFEITOS DOPAMINA (ATIVAÇÃO) ===========
+                            const heatAtual = Math.min(contador67, 50) / 50;
+                            aplicarGlowCorpo(heatAtual);
+                            
+                            tremerTela(15 + Math.min(contador67 * 2, 40)); 
+                            
+                            let mediaX = ((handsData[0][9].x + handsData[1][9].x) / 2) * canvasElement.width;
+                            let mediaY = ((handsData[0][9].y + handsData[1][9].y) / 2) * canvasElement.height;
+
+                            criarExplosao(mediaX, mediaY, contador67);
+                            
+                            if (contador67 > 0 && contador67 % 10 === 0) {
+                                let cx = canvasElement.width / 2;
+                                let cy = canvasElement.height / 2;
+                                criarPopup("INSANO!!! FAZ O 67!", cx, cy, 1.5);
+                                tremerTela(40);
+                            } else if (contador67 > 0 && contador67 % 5 === 0) {
+                                const mensagens = ["67 NELES!", "FAZ O SÍMBOLO!", "NÃO PARA!", "QUE ISSO! 67!", "ON FIRE!"];
+                                const msgAleatoria = mensagens[Math.floor(Math.random() * mensagens.length)];
+                                criarPopup(msgAleatoria, mediaX, mediaY, 1.2);
+                            } else {
+                                criarPopup("67!", mediaX, mediaY, 1.0);
+                            }
+                            // ====================================================
+
                             // START TIMER NO PRIMEIRO PONTO VALIDO (APENAS RANKED)
                             if (!jogoEmAndamento && contador67 === 1 && !modoLivre) {
                                 iniciarContagemRegressiva();
@@ -757,6 +987,11 @@
                 bolaEsq.classList.remove('ok');
                 bolaDir.classList.remove('ok');
             }
+            
+            // CHAMADA RENDERIZADOR DE EFEITOS
+            if(!jogoFinalizado) {
+                atualizarEfeitosDopamina(canvasCtx);
+            }
 
             atualizarTextos();
             canvasCtx.restore();
@@ -770,9 +1005,9 @@
 
         hands.setOptions({
             maxNumHands: 2,
-            modelComplexity: 1,
-            minDetectionConfidence: 0.65,
-            minTrackingConfidence: 0.65
+            modelComplexity: 0,
+            minDetectionConfidence: 0.6,
+            minTrackingConfidence: 0.6
         });
 
         hands.onResults(onResults);
